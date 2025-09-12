@@ -1,45 +1,67 @@
 """An AWS Python Pulumi program"""
 
 import pulumi
-from pulumi_aws import s3
+import pulumi_aws as aws
 
-# Create the S3 bucket with tagging and force destroy
-bucket = s3.Bucket('my-bucket',
-                   force_destroy=True,
-                   tags={
-                       'Environment': 'dev',
-                       'Owner': 'manuel',
-                        }
-                   )
+# ------ Settings ---------#
+VPC_CIDR = '10.0.0.0/16'
+PUBLIC_SUBNET_CIDRS = ['10.0.0.0/24', '10.0.1.0/24', '10.0.2.0/24']
 
-# Block all public access
-s3.BucketPublicAccessBlock('my-bucket-public-access',
-                           bucket=bucket.id,
-                           block_public_acls=True,
-                           block_public_policy=True,
-                           ignore_public_acls=True,
-                           restrict_public_buckets=True
-                           )
+# Get up to 3 availability zones in the current region
+azs = aws.get_availability_zones(state='available').names[:3]
 
-# Enable versioning
-s3.BucketVersioningV2('my-bucket-versioning',
-                      bucket=bucket.id,
-                      versioning_configuration=s3.BucketVersioningV2VersioningConfigurationArgs(
-                          status='Enabled'
-                        )
-                      )
+# --------- VPC -----------#
+vpc = aws.ec2.Vpc(
+    'app-vpc',
+    cidr_block=VPC_CIDR,
+    enable_dns_support=True,
+    enable_dns_hostnames=True,
+    tags={'Name': 'app-vpc'},
+)
 
-# Enable AES256 encryption
-s3.BucketServerSideEncryptionConfigurationV2('my-bucket-encryption',
-                                             bucket=bucket.id,
-                                             rules=[s3.BucketServerSideEncryptionConfigurationV2RuleArgs(
-                                                 apply_server_side_encryption_by_default=s3.BucketServerSideEncryptionConfigurationV2RuleApplyServerSideEncryptionByDefaultArgs(
-                                                     sse_algorithm='AES256'
-                                                 )
-                                             )]
-                                             )
+# Internet Gateway for public subnets
+igw = aws.ec2.InternetGateway(
+    'app-igw',
+    vpc_id=vpc.id,
+    tags={
+        'Name': 'app-igw'
+    }
+)
 
-# Export bucket name and ARN
-pulumi.export('bucket_name', bucket.id)
-pulumi.export('bucket_arn', bucket.arn)
+public_rt = aws.ec2.RouteTable(
+    'app-public-rt',
+    vpc_id=vpc.id,
+    routes=[
+        aws.ec2.RouteTableRouteArgs(
+            cidr_block='0.0.0.0/0',
+            gateway_id=igw.id,
+        ),
+    ],
+    tags={'Name': 'app-public-rt'}
+)
+
+# Create 3 public subnets (mapPublicOnLaunch=True) and associate to route table
+public_subnets = []
+for i, cidr in enumerate(PUBLIC_SUBNET_CIDRS):
+    subnet = aws.ec2.Subnet(
+        f'app-public-subnet-{i+1}',
+        vpc_id=vpc.id,
+        cidr_block=cidr,
+        availability_zone=azs[i % len(azs)],
+        map_public_ip_on_launch=True,
+        tags={'Name': f'app-public-{i+1}'}
+    )
+
+    aws.ec2.RouteTableAssociation(
+        f'app-public-rta-{i+1}',
+        route_table_id=public_rt.id,
+        subnet_id=subnet.id,
+    )
+    public_subnets.append(subnet)
+
+pulumi.export('vpc_id', vpc.id)
+pulumi.export('igw_id', igw.id)
+pulumi.export('public_route_table_id', public_rt.id)
+pulumi.export('public_subnet_ids', [s.id for s in public_subnets])
+pulumi.export('public_subnet_azs', [s.availability_zone for s in public_subnets])
 
