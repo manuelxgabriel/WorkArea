@@ -1,0 +1,11 @@
+name: network-vpc
+description: Base VPC private subnets for app infra
+runtime:
+  name: python
+  options:
+    toolchain: pip
+    virtualenv: venv
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-python
