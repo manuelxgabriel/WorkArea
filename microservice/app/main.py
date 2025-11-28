@@ -1,33 +1,38 @@
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, JSONResponse
 from pathlib import Path
+from pydantic import BaseModel
+
+from pymongo import MongoClient
+import certifi
 
 app = FastAPI(title="FastAPI Microservice")
 BASE_DIR = Path(__file__).resolve().parent
 FAVICON_PATH = BASE_DIR / "static" / "favicon.ico"
 
+# ---- Mongo Setup -----
+MONGO_URL = (
+    "mongodb+srv://manuelxgabriel:Elfuturo2021"
+    "@mservice-db.xyadzr7.mongodb.net/mservice-db"
+    "?appName=mservice-db"
+)
+client = MongoClient(
+    MONGO_URL,
+    serverSelectionTimeoutMS=2000,
+    tlsCAFile=certifi.where()
+)
+db = client.get_database()
+
 foods = [
-    "Pizza",
-    "Sushi",
-    "Hamburger",
-    "Pasta",
-    "Salad",
-    "Tacos",
-    "Steak",
-    "Fried Rice",
-    "Ramen",
-    "Curry",
-    "Sandwich",
-    "Burrito",
-    "Dumplings",
-    "Ice Cream",
-    "Chocolate",
-    "Pancakes",
-    "Hot Dog",
-    "Falafel",
-    "Paella",
-    "Pho"
+    {"name": "Pizza", "price": 12.43},
+    {"name": "Sushi", "price": 31.83},
+    {"name": "Pho", "price": 9.12}
 ]
+
+
+class Item(BaseModel):
+    name: str
+    price: float
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -43,10 +48,26 @@ async def read_root():
     return {"message": "Hello, from FASTAPI"}
 
 
-@app.get("/food-items")
+@app.get("/items")
 def get_item_list():
     return {"food-list": foods}
 
-# -- Post Request --
 
+# -- Post Request --
+@app.get("/items/")
+def create_item(single_item: str):
+    return {"message": f'You printed: {single_item}'}
+
+
+@app.get('/health')
+def health_check():
+    try:
+        db.command("ping")
+        print("MongoDB successfully connected!")
+        return {"status": "ok"}
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "details": str(e)}
+        )
 
