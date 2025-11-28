@@ -59,6 +59,7 @@ def create_item(single_item: str):
     return {"message": f'You printed: {single_item}'}
 
 
+# -- Connection to MongoDB --
 @app.get('/health')
 def health_check():
     try:
