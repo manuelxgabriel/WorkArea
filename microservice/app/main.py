@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, Response, JSONResponse
 from pathlib import Path
 from pydantic import BaseModel
+from database import database
+import uvicorn
 
 from pymongo import MongoClient
 import certifi
@@ -11,17 +13,17 @@ BASE_DIR = Path(__file__).resolve().parent
 FAVICON_PATH = BASE_DIR / "static" / "favicon.ico"
 
 # ---- Mongo Setup -----
-MONGO_URL = (
-    "mongodb+srv://manuelxgabriel:Elfuturo2021"
-    "@mservice-db.xyadzr7.mongodb.net/mservice-db"
-    "?appName=mservice-db"
-)
-client = MongoClient(
-    MONGO_URL,
-    serverSelectionTimeoutMS=2000,
-    tlsCAFile=certifi.where()
-)
-db = client.get_database()
+# MONGO_URL = (
+#     "mongodb+srv://manuelxgabriel:Elfuturo2021"
+#     "@mservice-db.xyadzr7.mongodb.net/mservice-db"
+#     "?appName=mservice-db"
+# )
+# client = MongoClient(
+#     MONGO_URL,
+#     serverSelectionTimeoutMS=2000,
+#     tlsCAFile=certifi.where()
+# )
+# db = client.get_database()
 
 foods = [
     {"name": "Pizza", "price": 12.43},
@@ -59,11 +61,19 @@ def create_item(single_item: str):
     return {"message": f'You printed: {single_item}'}
 
 
+# -- User Database --
+@app.get('/users', response_description='List all users')
+async def list_users():
+    users = await user_collection.find()
+
+    return {"Message": users}
+
+
 # -- Connection to MongoDB --
 @app.get('/health')
 def health_check():
     try:
-        db.command("ping")
+        # database.command("ping")
         print("MongoDB successfully connected!")
         return {"status": "ok"}
     except Exception as e:
@@ -72,3 +82,6 @@ def health_check():
             content={"status": "error", "details": str(e)}
         )
 
+
+# if __name__ == "__main__":
+    # uvicorn.run("main:app", host="0.0.0.0", port=8000, log_level="info")
