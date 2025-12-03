@@ -1,9 +1,14 @@
 from pymongo import MongoClient
+from dotenv import load_dotenv, dotenv_values
 import certifi
 import os
 
-DB_USER = os.getenv("USER")
-DB_PASSWORD = os.getenv("PASSWORD")
+load_dotenv(dotenv_path=".env")
+
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+print(DB_USER, DB_PASSWORD)
+
 
 MONGO_URL = (
 
@@ -20,4 +25,4 @@ client = MongoClient(
 
 database = client.get_database()
 
-# user_collection = database.get_collection('users')
+user_collection = database.get_collection('users')

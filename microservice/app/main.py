@@ -2,8 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, Response, JSONResponse
 from pathlib import Path
 from pydantic import BaseModel
-from database import database
-import uvicorn
+from database import database, user_collection
 
 from pymongo import MongoClient
 import certifi
@@ -73,7 +72,7 @@ async def list_users():
 @app.get('/health')
 def health_check():
     try:
-        # database.command("ping")
+        database.command("ping")
         print("MongoDB successfully connected!")
         return {"status": "ok"}
     except Exception as e:
