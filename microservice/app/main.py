@@ -60,12 +60,29 @@ def create_item(single_item: str):
     return {"message": f'You printed: {single_item}'}
 
 
-# -- User Database --
-@app.get('/users', response_description='List all users')
+# -- List All Users ---
+@app.get("/users", response_description='List all users')
 async def list_users():
-    users = await user_collection.find()
+    try:
+        users_collection = database.get_collection('users')
+        users = list(users_collection.find({}))
 
-    return {"Message": users}
+        for user in users:
+            user['_id'] = str(user['_id'])
+
+        return {"users": users}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# --- List All Collections ---
+@app.get("/collections", response_description="List all collections")
+async def list_collections():
+    try:
+        collections = database.list_collection_names()
+        return {"collections": collections}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 # -- Connection to MongoDB --

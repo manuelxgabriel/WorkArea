@@ -7,7 +7,7 @@ load_dotenv(dotenv_path=".env")
 
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
-print(DB_USER, DB_PASSWORD)
+# print(DB_USER, DB_PASSWORD)
 
 
 MONGO_URL = (
@@ -23,6 +23,5 @@ client = MongoClient(
     tlsCAFile=certifi.where()
 )
 
-database = client.get_database()
-
+database = client.get_database('sample_mflix')
 user_collection = database.get_collection('users')
