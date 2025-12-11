@@ -11,19 +11,6 @@ app = FastAPI(title="FastAPI Microservice")
 BASE_DIR = Path(__file__).resolve().parent
 FAVICON_PATH = BASE_DIR / "static" / "favicon.ico"
 
-# ---- Mongo Setup -----
-# MONGO_URL = (
-#     "mongodb+srv://manuelxgabriel:Elfuturo2021"
-#     "@mservice-db.xyadzr7.mongodb.net/mservice-db"
-#     "?appName=mservice-db"
-# )
-# client = MongoClient(
-#     MONGO_URL,
-#     serverSelectionTimeoutMS=2000,
-#     tlsCAFile=certifi.where()
-# )
-# db = client.get_database()
-
 foods = [
     {"name": "Pizza", "price": 12.43},
     {"name": "Sushi", "price": 31.83},
